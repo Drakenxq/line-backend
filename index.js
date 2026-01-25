@@ -56,16 +56,21 @@ app.post("/send-line", async (req, res) => {
   const { taskId, title } = req.body;
 
   /* ---- VALIDATE ---- */
-  if (!title) {
+  if (!title || !taskId) {
     return res.status(400).json({
       ok: false,
-      error: "title is required"
+      error: "taskId and title are required"
     });
   }
 
   /* =======================
      FLEX MESSAGE
   ======================= */
+
+  // 👉 URL ไปหน้า task ตรงตัว
+  const DETAIL_URL =
+    `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`;
+
   const flex = {
     type: "flex",
     altText: "มีงานเข้ามาใหม่",
@@ -98,15 +103,13 @@ app.post("/send-line", async (req, res) => {
             weight: "bold",
             wrap: true
           },
-          taskId
-            ? {
-                type: "text",
-                text: `เลขงาน: ${taskId}`,
-                size: "sm",
-                color: "#6b7280"
-              }
-            : null
-        ].filter(Boolean)
+          {
+            type: "text",
+            text: `เลขงาน: ${taskId}`,
+            size: "sm",
+            color: "#6b7280"
+          }
+        ]
       },
       footer: {
         type: "box",
@@ -119,7 +122,7 @@ app.post("/send-line", async (req, res) => {
             action: {
               type: "uri",
               label: "View Detail",
-              uri: "https://gunkul-my-task-system.web.app/"
+              uri: DETAIL_URL
             }
           }
         ]
