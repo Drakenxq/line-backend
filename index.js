@@ -90,7 +90,7 @@ function buildFlex(taskId, code, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: ` ${code || "-"}`,
+            text: `${code || "-"}`,
             weight: "bold",
             size: "xl",
             wrap: true
