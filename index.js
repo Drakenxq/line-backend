@@ -66,7 +66,7 @@ function formatDate(ts) {
 function buildFlex(taskId, code, title, createdAt) {
   return {
     type: "flex",
-    altText: "มีงานรอยืนยันใหม่",
+    altText: "แจ้งเตือนรายการใหม่",
     contents: {
       type: "bubble",
       size: "mega",
