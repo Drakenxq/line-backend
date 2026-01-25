@@ -49,9 +49,14 @@ app.get("/", (_, res) => {
 ======================= */
 function formatDate(ts) {
   if (!ts || !ts.toDate) return "-";
+
   return ts.toDate().toLocaleString("th-TH", {
-    dateStyle: "medium",
-    timeStyle: "short"
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
   });
 }
 
@@ -74,7 +79,7 @@ function buildFlex(taskId, code, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: "ระบบแจ้งเตือน | มีงานรอยืนยัน",
+            text: "ระบบแจ้งเตือน/รายการเพิ่มงานใหม่",
             color: "#ffffff",
             weight: "bold",
             align: "center",
