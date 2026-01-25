@@ -61,7 +61,7 @@ function formatDate(ts) {
 function buildFlex(taskId, code, title, createdAt) {
   return {
     type: "flex",
-    altText: "📄 มีงานรอยืนยันใหม่",
+    altText: "มีงานรอยืนยันใหม่",
     contents: {
       type: "bubble",
       size: "mega",
@@ -74,7 +74,7 @@ function buildFlex(taskId, code, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: "📄 มีงานรอยืนยัน",
+            text: "ระบบแจ้งเตือน | มีงานรอยืนยัน",
             color: "#ffffff",
             weight: "bold",
             align: "center",
@@ -90,7 +90,7 @@ function buildFlex(taskId, code, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: `📌 ${code || "-"}`,
+            text: ` ${code || "-"}`,
             weight: "bold",
             size: "xl",
             wrap: true
