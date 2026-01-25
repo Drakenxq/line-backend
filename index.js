@@ -14,16 +14,14 @@ const LINE_TOKEN = process.env.LINE_TOKEN;
 const PORT = process.env.PORT || 3000;
 
 /* =======================
-   FIREBASE ADMIN (สำคัญ)
+   FIREBASE ADMIN
 ======================= */
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
   console.error("❌ FIREBASE_SERVICE_ACCOUNT missing");
   process.exit(1);
 }
 
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT
-);
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -42,14 +40,23 @@ if (!LINE_TOKEN) {
 /* =======================
    HEALTH CHECK
 ======================= */
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("LINE Backend OK");
 });
 
 /* =======================
    FLEX MESSAGE
 ======================= */
-function buildFlex(taskId, title) {
+function formatDate(ts) {
+  if (!ts) return "-";
+  const d = ts.toDate();
+  return d.toLocaleString("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+}
+
+function buildFlex(taskId, title, createdAt) {
   return {
     type: "flex",
     altText: "มีงานรอยืนยันใหม่",
@@ -80,7 +87,14 @@ function buildFlex(taskId, title) {
             type: "text",
             text: title,
             weight: "bold",
-            wrap: true
+            wrap: true,
+            size: "md"
+          },
+          {
+            type: "text",
+            text: `สร้างเมื่อ: ${formatDate(createdAt)}`,
+            size: "sm",
+            color: "#6b7280"
           },
           {
             type: "text",
@@ -112,10 +126,12 @@ function buildFlex(taskId, title) {
 /* =======================
    SEND LINE
 ======================= */
-async function sendLine(taskId, title) {
+async function sendLine(taskId, title, createdAt) {
   await axios.post(
     "https://api.line.me/v2/bot/message/broadcast",
-    { messages: [buildFlex(taskId, title)] },
+    {
+      messages: [buildFlex(taskId, title, createdAt)]
+    },
     {
       headers: {
         Authorization: `Bearer ${LINE_TOKEN}`,
@@ -144,7 +160,11 @@ async function checkWaitingTasks() {
 
       console.log("🔔 Sending LINE:", d.id);
 
-      await sendLine(d.id, task.title);
+      await sendLine(
+        d.id,
+        task.title,
+        task.createdAt
+      );
 
       await d.ref.update({
         lineNotified: true,
