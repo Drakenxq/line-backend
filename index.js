@@ -45,23 +45,26 @@ app.get("/", (_, res) => {
 });
 
 /* =======================
-   FLEX MESSAGE
+   UTIL
 ======================= */
 function formatDate(ts) {
-  if (!ts) return "-";
-  const d = ts.toDate();
-  return d.toLocaleString("th-TH", {
+  if (!ts || !ts.toDate) return "-";
+  return ts.toDate().toLocaleString("th-TH", {
     dateStyle: "medium",
     timeStyle: "short"
   });
 }
 
-function buildFlex(taskId, title, createdAt) {
+/* =======================
+   FLEX MESSAGE
+======================= */
+function buildFlex(taskId, title, code, createdAt) {
   return {
     type: "flex",
-    altText: "มีงานรอยืนยันใหม่",
+    altText: "📄 มีงานรอยืนยันใหม่",
     contents: {
       type: "bubble",
+      size: "mega",
       header: {
         type: "box",
         layout: "vertical",
@@ -70,7 +73,7 @@ function buildFlex(taskId, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: "มีงานรอยืนยัน",
+            text: "📄 มีงานรอยืนยัน",
             color: "#ffffff",
             weight: "bold",
             align: "center",
@@ -81,24 +84,30 @@ function buildFlex(taskId, title, createdAt) {
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "sm",
+        spacing: "md",
         contents: [
           {
             type: "text",
-            text: title,
+            text: `📌 ${code || "-"}`,
             weight: "bold",
-            wrap: true,
-            size: "md"
+            size: "xl",
+            wrap: true
           },
           {
             type: "text",
-            text: `สร้างเมื่อ: ${formatDate(createdAt)}`,
+            text: title,
+            size: "md",
+            wrap: true
+          },
+          {
+            type: "text",
+            text: `⏰ สร้างเมื่อ: ${formatDate(createdAt)}`,
             size: "sm",
             color: "#6b7280"
           },
           {
             type: "text",
-            text: `เลขงาน: ${taskId}`,
+            text: `🆔 เลขงาน: ${taskId}`,
             size: "sm",
             color: "#6b7280"
           }
@@ -111,9 +120,10 @@ function buildFlex(taskId, title, createdAt) {
           {
             type: "button",
             style: "primary",
+            color: "#22c55e",
             action: {
               type: "uri",
-              label: "View Detail",
+              label: "🔍 View Detail",
               uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
             }
           }
@@ -126,11 +136,13 @@ function buildFlex(taskId, title, createdAt) {
 /* =======================
    SEND LINE
 ======================= */
-async function sendLine(taskId, title, createdAt) {
+async function sendLine(taskId, title, code, createdAt) {
   await axios.post(
     "https://api.line.me/v2/bot/message/broadcast",
     {
-      messages: [buildFlex(taskId, title, createdAt)]
+      messages: [
+        buildFlex(taskId, title, code, createdAt)
+      ]
     },
     {
       headers: {
@@ -163,6 +175,7 @@ async function checkWaitingTasks() {
       await sendLine(
         d.id,
         task.title,
+        task.code,
         task.createdAt
       );
 
