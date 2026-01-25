@@ -42,7 +42,9 @@ if (!LINE_TOKEN) {
 /* =======================
    HEALTH CHECK
 ======================= */
-app.get("/", (_, res) => res.send("LINE Backend OK"));
+app.get("/", (req, res) => {
+  res.send("LINE Backend OK");
+});
 
 /* =======================
    FLEX MESSAGE
@@ -58,36 +60,50 @@ function buildFlex(taskId, title) {
         layout: "vertical",
         backgroundColor: "#2563eb",
         paddingAll: "16px",
-        contents: [{
-          type: "text",
-          text: "มีงานรอยืนยัน",
-          color: "#ffffff",
-          weight: "bold",
-          align: "center",
-          size: "lg"
-        }]
+        contents: [
+          {
+            type: "text",
+            text: "มีงานรอยืนยัน",
+            color: "#ffffff",
+            weight: "bold",
+            align: "center",
+            size: "lg"
+          }
+        ]
       },
       body: {
         type: "box",
         layout: "vertical",
         spacing: "sm",
         contents: [
-          { type: "text", text: title, weight: "bold", wrap: true },
-          { type: "text", text: `เลขงาน: ${taskId}`, size: "sm", color: "#6b7280" }
+          {
+            type: "text",
+            text: title,
+            weight: "bold",
+            wrap: true
+          },
+          {
+            type: "text",
+            text: `เลขงาน: ${taskId}`,
+            size: "sm",
+            color: "#6b7280"
+          }
         ]
       },
       footer: {
         type: "box",
         layout: "vertical",
-        contents: [{
-          type: "button",
-          style: "primary",
-          action: {
-            type: "uri",
-            label: "View Detail",
-            uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            action: {
+              type: "uri",
+              label: "View Detail",
+              uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
+            }
           }
-        }]
+        ]
       }
     }
   };
@@ -123,19 +139,19 @@ async function checkWaitingTasks() {
 
     if (snap.empty) return;
 
-    for (const doc of snap.docs) {
-      const task = doc.data();
+    for (const d of snap.docs) {
+      const task = d.data();
 
-      console.log("🔔 Sending LINE:", doc.id);
+      console.log("🔔 Sending LINE:", d.id);
 
-      await sendLine(doc.id, task.title);
+      await sendLine(d.id, task.title);
 
-      await doc.ref.update({
+      await d.ref.update({
         lineNotified: true,
         lineNotifiedAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      console.log("✅ LINE SENT:", doc.id);
+      console.log("✅ LINE SENT:", d.id);
     }
   } catch (err) {
     console.error("❌ POLLING ERROR:", err.message);
