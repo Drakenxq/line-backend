@@ -70,56 +70,88 @@ function buildFlex(taskId, code, title, createdAt) {
     contents: {
       type: "bubble",
       size: "mega",
+
       header: {
         type: "box",
         layout: "vertical",
         backgroundColor: "#2563eb",
         paddingAll: "16px",
-        contents: [{
-          type: "text",
-          text: "ระบบแจ้งเตือน/รายการเพิ่มงานใหม่",
-          color: "#ffffff",
-          weight: "bold",
-          align: "center",
-          size: "lg"
-        }]
+        contents: [
+          {
+            type: "text",
+            text: "ระบบแจ้งเตือน/รายการเพิ่มงานใหม่",
+            color: "#ffffff",
+            weight: "bold",
+            align: "center",
+            size: "lg"
+          }
+        ]
       },
+
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
         contents: [
-          { type: "text", text: code || "-", weight: "bold", size: "xl", wrap: true },
-          { type: "text", text: title || "-", size: "md", wrap: true },
-          { type: "text", text: `⏰ สร้างเมื่อ: ${formatDate(createdAt)}`, size: "sm", color: "#6b7280" },
-          { type: "text", text: `🆔 เลขงาน: ${taskId}`, size: "sm", color: "#6b7280" }
+          {
+            type: "text",
+            text: `${code || "-"}`,
+            weight: "bold",
+            size: "xl",
+            wrap: true
+          },
+          {
+            type: "text",
+            text: title || "-",
+            size: "md",
+            wrap: true
+          },
+          {
+            type: "text",
+            text: `⏰ สร้างเมื่อ: ${formatDate(createdAt)}`,
+            size: "sm",
+            color: "#6b7280"
+          },
+          {
+            type: "text",
+            text: `🆔 เลขงาน: ${taskId}`,
+            size: "sm",
+            color: "#6b7280"
+          }
         ]
       },
+
       footer: {
         type: "box",
         layout: "vertical",
-        contents: [{
-          type: "button",
-          style: "primary",
-          color: "#22c55e",
-          action: {
-            type: "uri",
-            label: "🔍 View Detail",
-            uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#22c55e",
+            action: {
+              type: "uri",
+              label: "🔍 View Detail",
+              uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
+            }
           }
-        }]
+        ]
       }
     }
   };
 }
 
 /* =======================
-   SEND LINE (ยังไม่เรียกเอง)
+   SEND LINE
 ======================= */
 async function sendLine(taskId, code, title, createdAt) {
   await axios.post(
     "https://api.line.me/v2/bot/message/broadcast",
-    { messages: [buildFlex(taskId, code, title, createdAt)] },
+    {
+      messages: [
+        buildFlex(taskId, code, title, createdAt)
+      ]
+    },
     {
       headers: {
         Authorization: `Bearer ${LINE_TOKEN}`,
@@ -130,53 +162,47 @@ async function sendLine(taskId, code, title, createdAt) {
 }
 
 /* =======================
-   FRONTEND TRIGGER
+   AUTO POLLING ⭐
 ======================= */
-app.post("/notify-new-task", async (req, res) => {
+async function checkWaitingTasks() {
   try {
-    const { taskId } = req.body;
+    const snap = await db
+      .collection("tasks")
+      .where("status", "==", "waiting confirmation")
+      .where("lineNotified", "==", false)
+      .limit(5)
+      .get();
 
-    if (!taskId) {
-      return res.status(400).json({ ok:false, error:"taskId missing" });
+    if (snap.empty) return;
+
+    for (const d of snap.docs) {
+      const task = d.data();
+
+      console.log("🔔 Sending LINE:", d.id);
+
+      await sendLine(
+        d.id,
+        task.code,
+        task.title,
+        task.createdAt
+      );
+
+      await d.ref.update({
+        lineNotified: true,
+        lineNotifiedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log("✅ LINE SENT:", d.id);
     }
-
-    const snap = await db.collection("tasks").doc(taskId).get();
-    if (!snap.exists) {
-      return res.status(404).json({ ok:false, error:"task not found" });
-    }
-
-    const task = snap.data();
-
-    // กันยิงซ้ำ
-    if (task.lineNotified === true) {
-      return res.json({ ok:true, skipped:true });
-    }
-
-    if (task.status !== "waiting confirmation") {
-      return res.json({ ok:true, skipped:true });
-    }
-
-    await sendLine(
-      taskId,
-      task.code,
-      task.title,
-      task.createdAt
-    );
-
-    await snap.ref.update({
-      lineNotified: true,
-      lineNotifiedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log("✅ LINE SENT (frontend trigger):", taskId);
-
-    res.json({ ok:true });
-
   } catch (err) {
-    console.error("❌ notify-new-task error:", err);
-    res.status(500).json({ ok:false });
+    console.error("❌ POLLING ERROR:", err.message);
   }
-});
+}
+
+/* =======================
+   RUN EVERY 10s
+======================= */
+setInterval(checkWaitingTasks, 10000);
 
 /* =======================
    START SERVER
