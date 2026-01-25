@@ -11,15 +11,22 @@ app.use(cors());
 app.use(express.json());
 
 const LINE_TOKEN = process.env.LINE_TOKEN;
-const API_KEY    = process.env.API_KEY;
-const PORT       = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 /* =======================
-   FIREBASE ADMIN
+   FIREBASE ADMIN (สำคัญ)
 ======================= */
-// ใช้ Application Default Credentials (เหมาะกับ Render)
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  console.error("❌ FIREBASE_SERVICE_ACCOUNT missing");
+  process.exit(1);
+}
+
+const serviceAccount = JSON.parse(
+  process.env.FIREBASE_SERVICE_ACCOUNT
+);
+
 admin.initializeApp({
-  credential: admin.credential.applicationDefault()
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
@@ -27,28 +34,20 @@ const db = admin.firestore();
 /* =======================
    CHECK ENV
 ======================= */
-if (!LINE_TOKEN) console.error("❌ LINE_TOKEN missing");
-if (!API_KEY) console.error("❌ API_KEY missing");
+if (!LINE_TOKEN) {
+  console.error("❌ LINE_TOKEN missing");
+  process.exit(1);
+}
 
 /* =======================
    HEALTH CHECK
 ======================= */
-app.get("/", (req, res) => {
-  res.send("LINE Backend OK");
-});
-
-app.get("/health", (req, res) => {
-  res.json({
-    ok: true,
-    lineToken: !!LINE_TOKEN,
-    apiKey: !!API_KEY
-  });
-});
+app.get("/", (_, res) => res.send("LINE Backend OK"));
 
 /* =======================
-   FLEX MESSAGE BUILDER
+   FLEX MESSAGE
 ======================= */
-function buildFlex(taskId, title){
+function buildFlex(taskId, title) {
   return {
     type: "flex",
     altText: "มีงานรอยืนยันใหม่",
@@ -59,50 +58,36 @@ function buildFlex(taskId, title){
         layout: "vertical",
         backgroundColor: "#2563eb",
         paddingAll: "16px",
-        contents: [
-          {
-            type: "text",
-            text: "มีงานรอยืนยัน",
-            color: "#ffffff",
-            weight: "bold",
-            align: "center",
-            size: "lg"
-          }
-        ]
+        contents: [{
+          type: "text",
+          text: "มีงานรอยืนยัน",
+          color: "#ffffff",
+          weight: "bold",
+          align: "center",
+          size: "lg"
+        }]
       },
       body: {
         type: "box",
         layout: "vertical",
         spacing: "sm",
         contents: [
-          {
-            type: "text",
-            text: title,
-            weight: "bold",
-            wrap: true
-          },
-          {
-            type: "text",
-            text: `เลขงาน: ${taskId}`,
-            size: "sm",
-            color: "#6b7280"
-          }
+          { type: "text", text: title, weight: "bold", wrap: true },
+          { type: "text", text: `เลขงาน: ${taskId}`, size: "sm", color: "#6b7280" }
         ]
       },
       footer: {
         type: "box",
         layout: "vertical",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            action: {
-              type: "uri",
-              label: "View Detail",
-              uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
-            }
+        contents: [{
+          type: "button",
+          style: "primary",
+          action: {
+            type: "uri",
+            label: "View Detail",
+            uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
           }
-        ]
+        }]
       }
     }
   };
@@ -111,86 +96,56 @@ function buildFlex(taskId, title){
 /* =======================
    SEND LINE
 ======================= */
-async function sendLine(taskId, title){
-  const flex = buildFlex(taskId, title);
-
+async function sendLine(taskId, title) {
   await axios.post(
     "https://api.line.me/v2/bot/message/broadcast",
-    { messages: [flex] },
+    { messages: [buildFlex(taskId, title)] },
     {
-      headers:{
+      headers: {
         Authorization: `Bearer ${LINE_TOKEN}`,
-        "Content-Type":"application/json"
+        "Content-Type": "application/json"
       }
     }
   );
 }
 
 /* =======================
-   AUTO POLLING (⭐ 핵심)
+   AUTO POLLING ⭐
 ======================= */
-async function checkWaitingTasks(){
-  try{
+async function checkWaitingTasks() {
+  try {
     const snap = await db
       .collection("tasks")
-      .where("status","==","waiting confirmation")
-      .where("lineNotified","!=",true)
+      .where("status", "==", "waiting confirmation")
+      .where("lineNotified", "==", false)
       .limit(5)
       .get();
 
     if (snap.empty) return;
 
-    for (const d of snap.docs){
-      const task = d.data();
+    for (const doc of snap.docs) {
+      const task = doc.data();
 
-      console.log("🔎 found waiting:", d.id);
+      console.log("🔔 Sending LINE:", doc.id);
 
-      await sendLine(d.id, task.title);
+      await sendLine(doc.id, task.title);
 
-      await d.ref.update({
+      await doc.ref.update({
         lineNotified: true,
         lineNotifiedAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      console.log("✅ LINE SENT:", d.id);
+      console.log("✅ LINE SENT:", doc.id);
     }
-
-  }catch(err){
+  } catch (err) {
     console.error("❌ POLLING ERROR:", err.message);
   }
 }
 
 /* =======================
-   RUN POLLING
+   RUN EVERY 10s
 ======================= */
-// แนะนำ 10–15 วินาที
 setInterval(checkWaitingTasks, 10000);
-
-/* =======================
-   OPTIONAL: MANUAL ENDPOINT
-======================= */
-app.post("/task-status-updated", async (req, res) => {
-
-  if (req.headers["x-api-key"] !== API_KEY) {
-    return res.status(403).json({ ok:false, error:"Forbidden" });
-  }
-
-  const { taskId, title, status, lineNotified } = req.body;
-
-  if (
-    status !== "waiting confirmation" ||
-    lineNotified === true
-  ) {
-    return res.json({ ok:true, skipped:true });
-  }
-
-  try{
-    await sendLine(taskId, title);
-    res.json({ ok:true });
-  }catch(e){
-    res.status(500).json({ ok:false });
-  }
-});
 
 /* =======================
    START SERVER
