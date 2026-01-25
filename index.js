@@ -58,13 +58,14 @@ function formatDate(ts) {
 /* =======================
    FLEX MESSAGE
 ======================= */
-function buildFlex(taskId, title, code, createdAt) {
+function buildFlex(taskId, code, title, createdAt) {
   return {
     type: "flex",
     altText: "📄 มีงานรอยืนยันใหม่",
     contents: {
       type: "bubble",
       size: "mega",
+
       header: {
         type: "box",
         layout: "vertical",
@@ -81,6 +82,7 @@ function buildFlex(taskId, title, code, createdAt) {
           }
         ]
       },
+
       body: {
         type: "box",
         layout: "vertical",
@@ -95,7 +97,7 @@ function buildFlex(taskId, title, code, createdAt) {
           },
           {
             type: "text",
-            text: title,
+            text: title || "-",
             size: "md",
             wrap: true
           },
@@ -113,6 +115,7 @@ function buildFlex(taskId, title, code, createdAt) {
           }
         ]
       },
+
       footer: {
         type: "box",
         layout: "vertical",
@@ -136,12 +139,12 @@ function buildFlex(taskId, title, code, createdAt) {
 /* =======================
    SEND LINE
 ======================= */
-async function sendLine(taskId, title, code, createdAt) {
+async function sendLine(taskId, code, title, createdAt) {
   await axios.post(
     "https://api.line.me/v2/bot/message/broadcast",
     {
       messages: [
-        buildFlex(taskId, title, code, createdAt)
+        buildFlex(taskId, code, title, createdAt)
       ]
     },
     {
@@ -174,8 +177,8 @@ async function checkWaitingTasks() {
 
       await sendLine(
         d.id,
-        task.title,
         task.code,
+        task.title,
         task.createdAt
       );
 
