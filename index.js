@@ -54,10 +54,10 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
   let typeLabel = taskType || "ทั่วไป";
 
   if (taskType === "FG") {
-    headerText = "🏗️ ระบบแจ้งเตือนงาน FG";
+    headerText = "📋 ระบบแจ้งเตือนงาน FG";
     headerColor = "#f97316";
   } else if (taskType === "Checker") {
-    headerText = "🛡️ ระบบแจ้งเตือนงาน CHECKER";
+    headerText = "📋 ระบบแจ้งเตือนงาน CHECKER";
     headerColor = "#0ea5e9";
   }
 
