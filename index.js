@@ -56,7 +56,7 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
   if (taskType === "FG") {
     headerText = "📋 ระบบแจ้งเตือนงาน FG";
     headerColor = "#f97316";
-  } else if (taskType === "Checker") {
+  } else if (taskType === "CHECKER") {
     headerText = "📋 ระบบแจ้งเตือนงาน CHECKER";
     headerColor = "#0ea5e9";
   }
