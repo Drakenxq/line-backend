@@ -4,7 +4,7 @@ import cors from "cors";
 import admin from "firebase-admin";
 
 /* =======================
-   BASIC SETUP
+    BASIC SETUP
 ======================= */
 const app = express();
 app.use(cors());
@@ -14,21 +14,13 @@ const PORT = process.env.PORT || 3000;
 const LINE_TOKEN = process.env.LINE_TOKEN;
 
 /* =======================
-   ENV CHECK
+    FIREBASE ADMIN
 ======================= */
-if (!LINE_TOKEN) {
-  console.error("❌ LINE_TOKEN missing");
-  process.exit(1);
-}
-
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
   console.error("❌ FIREBASE_SERVICE_ACCOUNT missing");
   process.exit(1);
 }
 
-/* =======================
-   FIREBASE ADMIN
-======================= */
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
@@ -38,53 +30,57 @@ admin.initializeApp({
 const db = admin.firestore();
 
 /* =======================
-   HEALTH CHECK
-======================= */
-app.get("/", (_, res) => {
-  res.send("✅ LINE Backend OK");
-});
-
-/* =======================
-   UTIL
+    UTIL
 ======================= */
 function formatDate(ts) {
-  if (!ts || !ts.toDate) return "-";
-  return ts.toDate().toLocaleString("th-TH", {
+  if (!ts) return "-";
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  return date.toLocaleString("th-TH", {
     timeZone: "Asia/Bangkok",
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit"
-  });
+  }) + " น.";
 }
 
 /* =======================
-   FLEX MESSAGE
+    FLEX MESSAGE BUILDER
 ======================= */
-function buildFlex(taskId, code, title, createdAt) {
+function buildFlex(taskId, code, title, createdAt, taskType) {
+  let headerText = "📋 ระบบแจ้งเตือนงานใหม่";
+  let headerColor = "#2563eb";
+  let typeLabel = taskType || "ทั่วไป";
+
+  if (taskType === "FG") {
+    headerText = "🏗️ ระบบแจ้งเตือนงาน FG";
+    headerColor = "#f97316";
+  } else if (taskType === "Checker") {
+    headerText = "🛡️ ระบบแจ้งเตือนงาน CHECKER";
+    headerColor = "#0ea5e9";
+  }
+
   return {
     type: "flex",
-    altText: "แจ้งเตือน/มีงานรอยืนยันใหม่",
+    altText: `📢 งานใหม่: [${typeLabel}] ${code}`,
     contents: {
       type: "bubble",
       size: "mega",
-
       header: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#2563eb",
-        paddingAll: "16px",
+        backgroundColor: headerColor,
+        paddingAll: "20px",
         contents: [{
           type: "text",
-          text: "📋 ระบบแจ้งเตือนงานใหม่",
+          text: headerText,
           color: "#ffffff",
           weight: "bold",
           align: "center",
           size: "lg"
         }]
       },
-
       body: {
         type: "box",
         layout: "vertical",
@@ -92,125 +88,156 @@ function buildFlex(taskId, code, title, createdAt) {
         contents: [
           {
             type: "text",
-            text: code || "-",
+            text: code || "ไม่ระบุรหัส",
             weight: "bold",
             size: "xl",
-            wrap: true
+            wrap: true,
+            color: "#111827"
           },
           {
             type: "text",
-            text: title || "-",
+            text: title || "ไม่ระบุชื่อโครงการ",
             size: "md",
-            wrap: true
+            wrap: true,
+            color: "#374151"
           },
           {
-            type: "text",
-            text: `⏰ สร้างเมื่อ: ${formatDate(createdAt)}`,
-            size: "sm",
-            color: "#6b7280"
+            type: "separator",
+            margin: "lg"
           },
           {
-            type: "text",
-            text: `🆔 เลขงาน: ${taskId}`,
-            size: "sm",
-            color: "#6b7280"
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            spacing: "sm",
+            contents: [
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  { type: "text", text: "ประเภท:", color: "#6b7280", size: "sm", flex: 2 },
+                  { type: "text", text: typeLabel, wrap: true, color: "#1f2937", size: "sm", flex: 5, weight: "bold" }
+                ]
+              },
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  { type: "text", text: "เวลาสร้าง:", color: "#6b7280", size: "sm", flex: 2 },
+                  { type: "text", text: formatDate(createdAt), wrap: true, color: "#1f2937", size: "sm", flex: 5 }
+                ]
+              }
+            ]
           }
         ]
       },
-
       footer: {
         type: "box",
         layout: "vertical",
+        paddingAll: "12px",
         contents: [{
           type: "button",
           style: "primary",
           color: "#22c55e",
+          height: "sm",
           action: {
             type: "uri",
-            label: "🔍 View Detail",
+            label: "ดูรายละเอียดงาน",
             uri: `https://gunkul-my-task-system.web.app/task_detail.html?id=${taskId}`
           }
         }]
+      },
+      styles: {
+        footer: { separator: true }
       }
     }
   };
 }
 
 /* =======================
-   SEND LINE
+    LINE API CALL
 ======================= */
-async function sendLine(taskId, code, title, createdAt) {
-  await axios.post(
-    "https://api.line.me/v2/bot/message/broadcast",
-    {
-      messages: [buildFlex(taskId, code, title, createdAt)]
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${LINE_TOKEN}`,
-        "Content-Type": "application/json"
+async function sendLineNotification(taskId, taskData) {
+  try {
+    const flexMessage = buildFlex(
+      taskId,
+      taskData.code,
+      taskData.title,
+      taskData.createdAt,
+      taskData.taskType
+    );
+
+    await axios.post(
+      "https://api.line.me/v2/bot/message/broadcast",
+      { messages: [flexMessage] },
+      {
+        headers: {
+          Authorization: `Bearer ${LINE_TOKEN}`,
+          "Content-Type": "application/json"
+        }
       }
-    }
-  );
+    );
+    return true;
+  } catch (error) {
+    console.error("❌ Line API Error:", error.response?.data || error.message);
+    throw error;
+  }
 }
 
 /* =======================
-   FRONTEND TRIGGER (CORE)
+    ROUTES
 ======================= */
+
+// Health Check
+app.get("/", (_, res) => res.send("🚀 LINE Notify Service is Online"));
+
+// Main Trigger
 app.post("/notify-new-task", async (req, res) => {
+  const { taskId } = req.body;
+
+  if (!taskId) {
+    return res.status(400).json({ ok: false, error: "Missing taskId" });
+  }
+
   try {
-    console.log("📥 notify-new-task called:", req.body);
-
-    const { taskId } = req.body;
-    if (!taskId) {
-      return res.status(400).json({ ok: false, error: "taskId missing" });
-    }
-
-    const ref = db.collection("tasks").doc(taskId);
-    const snap = await ref.get();
+    const docRef = db.collection("tasks").doc(taskId);
+    const snap = await docRef.get();
 
     if (!snap.exists) {
-      return res.status(404).json({ ok: false, error: "task not found" });
+      return res.status(404).json({ ok: false, error: "Task not found" });
     }
 
     const task = snap.data();
 
-    // กันยิงซ้ำ
     if (task.lineNotified === true) {
-      console.log("⏭ already notified:", taskId);
-      return res.json({ ok: true, skipped: true });
+      return res.json({ ok: true, message: "Already notified" });
     }
 
-    // เช็คสถานะ
-    if (task.status !== "waiting confirmation") {
-      console.log("⏭ status not waiting:", task.status);
-      return res.json({ ok: true, skipped: true });
-    }
+    await sendLineNotification(taskId, task);
 
-    await sendLine(
-      taskId,
-      task.code,
-      task.title,
-      task.createdAt
-    );
-
-    await ref.update({
+    await docRef.update({
       lineNotified: true,
       lineNotifiedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log("✅ LINE SENT:", taskId);
-    res.json({ ok: true });
+    console.log(`✅ Notification sent for Task: ${taskId} [${task.taskType}]`);
+    return res.json({ ok: true });
 
-  } catch (err) {
-    console.error("❌ notify-new-task error:", err);
-    res.status(500).json({ ok: false });
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    return res.status(500).json({ ok: false, error: error.message });
   }
 });
 
 /* =======================
-   START SERVER
+    START SERVER
 ======================= */
 app.listen(PORT, () => {
-  console.log("🚀 LINE Backend running on port", PORT);
+  console.log(`
+  🚀 Server is running on port ${PORT}
+  📢 Line Token: ${LINE_TOKEN ? "✅ Loaded" : "❌ Missing"}
+  🔥 Firebase: ${serviceAccount.project_id}
+  `);
 });
