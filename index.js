@@ -241,3 +241,36 @@ app.listen(PORT, () => {
   🔥 Firebase: ${serviceAccount.project_id}
   `);
 });
+/* =======================
+    LINE QUOTA API
+======================= */
+app.get("/line-quota", async (req, res) => {
+  try {
+    if (!LINE_TOKEN) {
+      return res.status(500).json({ error: "LINE_TOKEN not configured" });
+    }
+
+    const config = {
+      headers: { Authorization: `Bearer ${LINE_TOKEN}` }
+    };
+
+    const [usageRes, limitRes] = await Promise.all([
+      axios.get("https://api.line.me/v2/bot/message/quota/consumption", config),
+      axios.get("https://api.line.me/v2/bot/message/quota", config)
+    ]);
+
+    const used = usageRes.data.totalUsage || 0;
+    const limit = limitRes.data.value || 200;
+    const percentage = ((used / limit) * 100).toFixed(2);
+
+    res.json({
+      used: used,
+      limit: limit,
+      percentage: percentage
+    });
+
+  } catch (error) {
+    console.error("❌ Line Quota Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to fetch LINE quota" });
+  }
+});
