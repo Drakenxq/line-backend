@@ -182,9 +182,9 @@ function buildWarehouseFlex(docId, data) {
             layout: "vertical",
             spacing: "sm",
             contents: [
-              row("ผู้ส่ง",    sender),
+              row("บริษัทผู้ส่ง",    sender),
               row("Invoice",   invoice),
-              row("ผู้รับ",   recipient),
+              row("บริษัทผู้รับ",   recipient),
             ]
           },
 
@@ -234,7 +234,7 @@ function buildWarehouseFlex(docId, data) {
             action: {
               type: "uri",
               label: "ดูรายละเอียดการรับสินค้า",
-              uri: `https://gunkul-my-task-system.web.app/demomo/receiver.html?id=${docId}`
+              uri: `https://gunkul-my-task-system.web.app/Gunkul/demomo/receiver.html?id=${docId}`
             }
           }
         ]
