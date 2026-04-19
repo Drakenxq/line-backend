@@ -46,7 +46,7 @@ function formatDate(ts) {
 }
 
 /* =======================
-    FLEX MESSAGE BUILDER
+    FLEX: งานใหม่ (mytask เดิม)
 ======================= */
 function buildFlex(taskId, code, title, createdAt, taskType) {
   let headerText = "📋 ระบบแจ้งเตือนงานใหม่";
@@ -86,44 +86,21 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
         layout: "vertical",
         spacing: "md",
         contents: [
+          { type: "text", text: code || "ไม่ระบุรหัส", weight: "bold", size: "xl", wrap: true, color: "#111827" },
+          { type: "text", text: title || "ไม่ระบุชื่อโครงการ", size: "md", wrap: true, color: "#374151" },
+          { type: "separator", margin: "lg" },
           {
-            type: "text",
-            text: code || "ไม่ระบุรหัส",
-            weight: "bold",
-            size: "xl",
-            wrap: true,
-            color: "#111827"
-          },
-          {
-            type: "text",
-            text: title || "ไม่ระบุชื่อโครงการ",
-            size: "md",
-            wrap: true,
-            color: "#374151"
-          },
-          {
-            type: "separator",
-            margin: "lg"
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            margin: "lg",
-            spacing: "sm",
+            type: "box", layout: "vertical", margin: "lg", spacing: "sm",
             contents: [
               {
-                type: "box",
-                layout: "baseline",
-                spacing: "sm",
+                type: "box", layout: "baseline", spacing: "sm",
                 contents: [
                   { type: "text", text: "ประเภท:", color: "#6b7280", size: "sm", flex: 2 },
                   { type: "text", text: typeLabel, wrap: true, color: "#1f2937", size: "sm", flex: 5, weight: "bold" }
                 ]
               },
               {
-                type: "box",
-                layout: "baseline",
-                spacing: "sm",
+                type: "box", layout: "baseline", spacing: "sm",
                 contents: [
                   { type: "text", text: "เวลาสร้าง:", color: "#6b7280", size: "sm", flex: 2 },
                   { type: "text", text: formatDate(createdAt), wrap: true, color: "#1f2937", size: "sm", flex: 5 }
@@ -134,14 +111,9 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
         ]
       },
       footer: {
-        type: "box",
-        layout: "vertical",
-        paddingAll: "12px",
+        type: "box", layout: "vertical", paddingAll: "12px",
         contents: [{
-          type: "button",
-          style: "primary",
-          color: "#22c55e",
-          height: "sm",
+          type: "button", style: "primary", color: "#22c55e", height: "sm",
           action: {
             type: "uri",
             label: "ดูรายละเอียดงาน",
@@ -149,9 +121,100 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
           }
         }]
       },
-      styles: {
-        footer: { separator: true }
-      }
+      styles: { footer: { separator: true } }
+    }
+  };
+}
+
+/* =======================
+    FLEX: รับสินค้าสำเร็จ (warehouse)
+======================= */
+function buildWarehouseFlex(docId, data) {
+  const { sender, invoice, recipient, warehouse, receivedBy, receivedAt } = data;
+
+  return {
+    type: "flex",
+    altText: `✅ รับสินค้าแล้ว — ${sender || ""}`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#1a9e6b",
+        paddingAll: "20px",
+        contents: [{
+          type: "text",
+          text: "✅ รับสินค้าสำเร็จแล้ว",
+          color: "#ffffff",
+          weight: "bold",
+          align: "center",
+          size: "lg"
+        }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        paddingAll: "16px",
+        contents: [
+          {
+            type: "box", layout: "baseline", spacing: "sm",
+            contents: [
+              { type: "text", text: "ผู้ส่ง",        size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: sender    || "—", size: "sm", color: "#111827", flex: 6, weight: "bold", wrap: true }
+            ]
+          },
+          {
+            type: "box", layout: "baseline", spacing: "sm",
+            contents: [
+              { type: "text", text: "Invoice",        size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: invoice   || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
+            ]
+          },
+          {
+            type: "box", layout: "baseline", spacing: "sm",
+            contents: [
+              { type: "text", text: "ผู้รับ",         size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: recipient || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
+            ]
+          },
+          {
+            type: "box", layout: "baseline", spacing: "sm",
+            contents: [
+              { type: "text", text: "คลัง",           size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: warehouse || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          {
+            type: "box", layout: "baseline", spacing: "sm", margin: "md",
+            contents: [
+              { type: "text", text: "เซ็นรับโดย",      size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: receivedBy || "—", size: "sm", color: "#1a9e6b", flex: 6, weight: "bold", wrap: true }
+            ]
+          },
+          {
+            type: "box", layout: "baseline", spacing: "sm",
+            contents: [
+              { type: "text", text: "เวลารับ",          size: "sm", color: "#6b7280", flex: 3 },
+              { type: "text", text: formatDate(receivedAt), size: "sm", color: "#111827", flex: 6, wrap: true }
+            ]
+          }
+        ]
+      },
+      footer: {
+        type: "box", layout: "vertical", paddingAll: "12px",
+        contents: [{
+          type: "button", style: "primary", color: "#1a9e6b", height: "sm",
+          action: {
+            type: "uri",
+            label: "ดูรายละเอียดใน Dashboard",
+            uri: "https://gunkul-my-task-system.web.app/dashboard.html"
+          }
+        }]
+      },
+      styles: { footer: { separator: true } }
     }
   };
 }
@@ -160,30 +223,24 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
     LINE API CALL
 ======================= */
 async function sendLineNotification(taskId, taskData) {
-  try {
-    const flexMessage = buildFlex(
-      taskId,
-      taskData.code,
-      taskData.title,
-      taskData.createdAt,
-      taskData.taskType
-    );
+  const flexMessage = buildFlex(
+    taskId,
+    taskData.code,
+    taskData.title,
+    taskData.createdAt,
+    taskData.taskType
+  );
 
-    await axios.post(
-      "https://api.line.me/v2/bot/message/broadcast",
-      { messages: [flexMessage] },
-      {
-        headers: {
-          Authorization: `Bearer ${LINE_TOKEN}`,
-          "Content-Type": "application/json"
-        }
+  await axios.post(
+    "https://api.line.me/v2/bot/message/broadcast",
+    { messages: [flexMessage] },
+    {
+      headers: {
+        Authorization: `Bearer ${LINE_TOKEN}`,
+        "Content-Type": "application/json"
       }
-    );
-    return true;
-  } catch (error) {
-    console.error("❌ Line API Error:", error.response?.data || error.message);
-    throw error;
-  }
+    }
+  );
 }
 
 /* =======================
@@ -193,14 +250,47 @@ async function sendLineNotification(taskId, taskData) {
 // Health Check
 app.get("/", (_, res) => res.send("🚀 LINE Notify Service is Online"));
 
-// Main Trigger
+// Main Trigger — รองรับทั้ง mytask และ warehouse
 app.post("/notify-new-task", async (req, res) => {
-  const { taskId } = req.body;
+  const { taskId, type } = req.body;
 
   if (!taskId) {
     return res.status(400).json({ ok: false, error: "Missing taskId" });
   }
 
+  /* ─── warehouse_received: ดึงจาก warehouse_deliveries ─── */
+  if (type === "warehouse_received") {
+    try {
+      const snap = await db.collection("warehouse_deliveries").doc(taskId).get();
+
+      if (!snap.exists) {
+        return res.status(404).json({ ok: false, error: "Warehouse delivery not found" });
+      }
+
+      const data = snap.data();
+      const flexMessage = buildWarehouseFlex(taskId, data);
+
+      await axios.post(
+        "https://api.line.me/v2/bot/message/broadcast",
+        { messages: [flexMessage] },
+        {
+          headers: {
+            Authorization: `Bearer ${LINE_TOKEN}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      console.log(`✅ Warehouse notification sent: ${taskId}`);
+      return res.json({ ok: true });
+
+    } catch (error) {
+      console.error("❌ Warehouse Notify Error:", error.response?.data || error.message);
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+  }
+
+  /* ─── mytask เดิม: ดึงจาก tasks ─── */
   try {
     const docRef = db.collection("tasks").doc(taskId);
     const snap = await docRef.get();
@@ -232,16 +322,6 @@ app.post("/notify-new-task", async (req, res) => {
 });
 
 /* =======================
-    START SERVER
-======================= */
-app.listen(PORT, () => {
-  console.log(`
-  🚀 Server is running on port ${PORT}
-  📢 Line Token: ${LINE_TOKEN ? "✅ Loaded" : "❌ Missing"}
-  🔥 Firebase: ${serviceAccount.project_id}
-  `);
-});
-/* =======================
     LINE QUOTA API
 ======================= */
 app.get("/line-quota", async (req, res) => {
@@ -250,9 +330,7 @@ app.get("/line-quota", async (req, res) => {
       return res.status(500).json({ error: "LINE_TOKEN not configured" });
     }
 
-    const config = {
-      headers: { Authorization: `Bearer ${LINE_TOKEN}` }
-    };
+    const config = { headers: { Authorization: `Bearer ${LINE_TOKEN}` } };
 
     const [usageRes, limitRes] = await Promise.all([
       axios.get("https://api.line.me/v2/bot/message/quota/consumption", config),
@@ -263,14 +341,21 @@ app.get("/line-quota", async (req, res) => {
     const limit = limitRes.data.value || 200;
     const percentage = ((used / limit) * 100).toFixed(2);
 
-    res.json({
-      used: used,
-      limit: limit,
-      percentage: percentage
-    });
+    res.json({ used, limit, percentage });
 
   } catch (error) {
     console.error("❌ Line Quota Error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch LINE quota" });
   }
+});
+
+/* =======================
+    START SERVER
+======================= */
+app.listen(PORT, () => {
+  console.log(`
+  🚀 Server is running on port ${PORT}
+  📢 Line Token: ${LINE_TOKEN ? "✅ Loaded" : "❌ Missing"}
+  🔥 Firebase: ${serviceAccount.project_id}
+  `);
 });
