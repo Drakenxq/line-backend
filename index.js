@@ -45,6 +45,18 @@ function formatDate(ts) {
   }) + " น.";
 }
 
+function row(label, value) {
+  return {
+    type: "box",
+    layout: "horizontal",
+    spacing: "sm",
+    contents: [
+      { type: "text", text: label, size: "sm", color: "#8c877e", flex: 3, gravity: "top" },
+      { type: "text", text: value || "—", size: "sm", color: "#2c2825", flex: 6, wrap: true, align: "end" }
+    ]
+  };
+}
+
 /* =======================
     FLEX: งานใหม่ (mytask เดิม)
 ======================= */
@@ -127,100 +139,115 @@ function buildFlex(taskId, code, title, createdAt, taskType) {
 }
 
 /* =======================
-    FLEX: รับสินค้าสำเร็จ (warehouse)
+    FLEX: รับสินค้าสำเร็จ (warehouse) — minimal
 ======================= */
 function buildWarehouseFlex(docId, data) {
   const { sender, invoice, recipient, warehouse, receivedBy, receivedAt } = data;
 
   return {
     type: "flex",
-    altText: `✅ รับสินค้าแล้ว — ${sender || ""}`,
+    altText: `รับสินค้าแล้ว — ${sender || ""}`,
     contents: {
       type: "bubble",
       size: "mega",
+
+      /* ── Header ── */
       header: {
         type: "box",
         layout: "vertical",
         backgroundColor: "#1a9e6b",
-        paddingAll: "20px",
-        contents: [{
-          type: "text",
-          text: "✅ รับสินค้าสำเร็จแล้ว",
-          color: "#ffffff",
-          weight: "bold",
-          align: "center",
-          size: "lg"
-        }]
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "text",
+            text: "ระบบแจ้งเตือนรับสินค้า",
+            color: "#ffffff",
+            weight: "bold",
+            align: "center",
+            size: "md"
+          }
+        ]
       },
+
+      /* ── Body ── */
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "sm",
-        paddingAll: "16px",
+        paddingAll: "18px",
+        spacing: "md",
         contents: [
+          /* ข้อมูลหลัก */
           {
-            type: "box", layout: "baseline", spacing: "sm",
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
             contents: [
-              { type: "text", text: "ผู้ส่ง",        size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: sender    || "—", size: "sm", color: "#111827", flex: 6, weight: "bold", wrap: true }
+              row("ผู้ส่ง",    sender),
+              row("Invoice",   invoice),
+              row("ผู้รับ",   recipient),
+              row("คลัง",     warehouse)
             ]
           },
+
+          /* เส้นแบ่ง */
+          { type: "separator" },
+
+          /* เซ็นรับ + เวลา */
           {
-            type: "box", layout: "baseline", spacing: "sm",
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
             contents: [
-              { type: "text", text: "Invoice",        size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: invoice   || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
-            ]
-          },
-          {
-            type: "box", layout: "baseline", spacing: "sm",
-            contents: [
-              { type: "text", text: "ผู้รับ",         size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: recipient || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
-            ]
-          },
-          {
-            type: "box", layout: "baseline", spacing: "sm",
-            contents: [
-              { type: "text", text: "คลัง",           size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: warehouse || "—", size: "sm", color: "#111827", flex: 6, wrap: true }
-            ]
-          },
-          { type: "separator", margin: "md" },
-          {
-            type: "box", layout: "baseline", spacing: "sm", margin: "md",
-            contents: [
-              { type: "text", text: "เซ็นรับโดย",      size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: receivedBy || "—", size: "sm", color: "#1a9e6b", flex: 6, weight: "bold", wrap: true }
-            ]
-          },
-          {
-            type: "box", layout: "baseline", spacing: "sm",
-            contents: [
-              { type: "text", text: "เวลารับ",          size: "sm", color: "#6b7280", flex: 3 },
-              { type: "text", text: formatDate(receivedAt), size: "sm", color: "#111827", flex: 6, wrap: true }
+              {
+                type: "box",
+                layout: "horizontal",
+                spacing: "sm",
+                contents: [
+                  { type: "text", text: "เซ็นรับโดย", size: "sm", color: "#8c877e", flex: 3 },
+                  { type: "text", text: receivedBy || "—", size: "sm", color: "#1a9e6b", flex: 6, weight: "bold", wrap: true, align: "end" }
+                ]
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                spacing: "sm",
+                contents: [
+                  { type: "text", text: "เวลารับ", size: "sm", color: "#8c877e", flex: 3 },
+                  { type: "text", text: formatDate(receivedAt), size: "sm", color: "#2c2825", flex: 6, wrap: true, align: "end" }
+                ]
+              }
             ]
           }
         ]
       },
+
+      /* ── Footer ── */
       footer: {
-        type: "box", layout: "vertical", paddingAll: "12px",
-        contents: [{
-          type: "button", style: "primary", color: "#1a9e6b", height: "sm",
-          action: {
-            type: "uri",
-            label: "ดูรายละเอียดใน Dashboard",
-            uri: "https://gunkul-my-task-system.web.app/dashboard.html"
+        type: "box",
+        layout: "vertical",
+        paddingAll: "12px",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#1a9e6b",
+            height: "sm",
+            action: {
+              type: "uri",
+              label: "ดูรายละเอียดการรับสินค้า",
+              uri: `https://gunkul-my-task-system.web.app/receiver.html?id=${docId}`
+            }
           }
-        }]
+        ]
       },
+
       styles: { footer: { separator: true } }
     }
   };
 }
 
 /* =======================
-    LINE API CALL
+    LINE API CALL (mytask)
 ======================= */
 async function sendLineNotification(taskId, taskData) {
   const flexMessage = buildFlex(
@@ -247,10 +274,8 @@ async function sendLineNotification(taskId, taskData) {
     ROUTES
 ======================= */
 
-// Health Check
 app.get("/", (_, res) => res.send("🚀 LINE Notify Service is Online"));
 
-// Main Trigger — รองรับทั้ง mytask และ warehouse
 app.post("/notify-new-task", async (req, res) => {
   const { taskId, type } = req.body;
 
@@ -258,7 +283,7 @@ app.post("/notify-new-task", async (req, res) => {
     return res.status(400).json({ ok: false, error: "Missing taskId" });
   }
 
-  /* ─── warehouse_received: ดึงจาก warehouse_deliveries ─── */
+  /* ─── warehouse_received ─── */
   if (type === "warehouse_received") {
     try {
       const snap = await db.collection("warehouse_deliveries").doc(taskId).get();
@@ -290,7 +315,7 @@ app.post("/notify-new-task", async (req, res) => {
     }
   }
 
-  /* ─── mytask เดิม: ดึงจาก tasks ─── */
+  /* ─── mytask เดิม ─── */
   try {
     const docRef = db.collection("tasks").doc(taskId);
     const snap = await docRef.get();
