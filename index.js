@@ -234,7 +234,7 @@ function buildWarehouseFlex(docId, data) {
             action: {
               type: "uri",
               label: "ดูรายละเอียดการรับสินค้า",
-              uri: `https://gunkul-my-task-system.web.app/receiver.html?id=${docId}`
+              uri: `https://gunkul-my-task-system.web.app/demomo/receiver.html?id=${docId}`
             }
           }
         ]
