@@ -185,7 +185,6 @@ function buildWarehouseFlex(docId, data) {
               row("ผู้ส่ง",    sender),
               row("Invoice",   invoice),
               row("ผู้รับ",   recipient),
-              row("คลัง",     warehouse)
             ]
           },
 
