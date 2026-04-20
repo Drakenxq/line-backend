@@ -183,7 +183,7 @@ function buildWarehouseFlex(docId, data) {
             spacing: "sm",
             contents: [
               row("บริษัทผู้ส่ง",    sender),
-              row("Invoice",   invoice),
+              row("Invoice/Po",   invoice),
               row("บริษัทผู้รับ",   recipient),
             ]
           },
